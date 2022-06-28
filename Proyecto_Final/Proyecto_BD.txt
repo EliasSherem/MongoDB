@@ -1,0 +1,177 @@
+/*Consultas Proyecto Final */
+/************Consulta 1 **********************/
+var consul1=db.movies_metadata.aggregate([
+  {
+"$bucketAuto": {
+                "groupBy": "$release_date",
+                "buckets": 10,
+                "output": {
+                            "count": { $sum: 1 },
+                            "titles": { $push: "$title" }
+                }
+            }
+    },
+    {
+     $limit:100
+    }
+])
+consul1.forEach(function(doc){print(doc)})
+/************Consulta 2 **********************/
+
+var consul2 = db.movies_metadata.aggregate([
+   {
+"$bucket": {
+      "groupBy": "$runtime",
+      "boundaries": [45, 100, 150, 200],
+default: "null",
+"output": {
+"count": { $sum: 1 },
+"titles": { $push: "$title" }
+}
+}
+}
+])
+consul2.forEach(function(doc){print(doc)})
+
+/************Consulta 3 **********************/
+var consul3=db.movies_metadata.aggregate(
+                      [
+                       {$group:
+                               { _id:{nombre:"$nombre"},
+                                 maxpeli:{$max:'$popularity'}
+                               }
+                        }
+                       ]
+                     )
+                     
+ consul3.forEach(function(doc){print(doc)})
+/************Consulta 4 **********************/
+var consul4=db.movies_metadata.aggregate(
+[
+{$group:
+{ _id:{
+nombre:"$original_title",
+votacion: "$vote_average"},
+}
+},
+{$sort: {'_id':-1} },
+]
+)
+consul4.forEach(function(doc){print(doc)})
+/************Consulta 5 **********************/
+ var consul5=db.movies_metadata.aggregate([
+ {$project:
+ {
+ _id:0,
+ 'pelicula': {$toUpper: "$original_title"},
+ 'detalles': {
+ 'popularidad': {"$multiply": ["$popularity", 10}]}
+ },
+ 'movie':'$original_title'
+ }
+ }
+])
+consul5.forEach(function(doc){print(doc)})
+/************Consulta 6 **********************/
+var consul6=db.movies_metadata.aggregate([
+    {
+        $lookup:{
+            from:"credits",
+            localField:"movieId",
+            foreignField: "id",
+            as: "credits"
+        },{
+            $match:{runtime:{$gte: 100}}
+        },{
+            $project:{_id:0, "credits.id":0, "credits_id":0}
+        },{
+            $limit:100
+        }
+    }])
+    consul6.forEach(function(doc){print(doc)})
+/************Consulta 7 **********************/
+var consul7 = db.movies_metadata.aggregate([
+    {
+        $match:{
+            $and:[{vote_average:{$gte:8}}, {vote_count:{$gte:500}}]
+        }
+    },{
+        $lookup:{
+            from:"links_small",
+            localField:"movieId",
+            foreignField: "imdbId",
+            as: "links"
+        }
+    },{
+        $project:{_id:0, 'Links_id':0,'Links_movieId':0}
+    },{
+        $sort:{vote_average:1, vote_count: 1}
+        
+    },{
+        $limit:100
+    }
+    ])
+    consul7.forEach(function(doc){print(doc)})
+/************Consulta 8 **********************/
+
+var consul8 = db.movies_metadata.aggregate([
+    {
+    $match:{original_language:"es"}},
+    {$project:{title:1}},
+    {$addFields:{
+        Profits:{$subtract:["$revenue","$budget"]}
+    }},{
+        $limit:100
+    }
+    ]);
+  consul8.forEach(function(doc){print(doc)})  
+/************Consulta 9 **********************/
+var consul9 = db.ratings.aggregate([
+    {
+        "$group":
+            {
+                "_id":"$movieId",
+                "Average":{"$avg":"$rating"}
+            }
+    },
+    {
+        "$sort":{
+            "Average":1
+        }
+    },
+    {
+        "$bucketAuto":
+            {
+                "groupBy": "$Average",
+                "buckets":5
+            }
+    }
+])
+consul9.forEach(function(doc){print(doc)})
+/************Consulta 10 **********************/
+var consul10 = db.movies_metadata.aggregate([
+    {
+        $addFields:{
+            results:{
+                $regexMatch:{input: "$genres", regex: /Drama/, options:"i"}}
+                
+            }
+            
+        },{
+            $match:{results:{$eq: true}}
+        },
+        {
+            $project:{_id:0, "original_title":1, "release_date":1, "movieId":1}
+        },
+        {
+            $sort:{
+                release_date:1,
+            }
+        }
+    ])
+    consul10.forEach(function(doc){print(doc)})
+    
+    
+    
+    
+    
